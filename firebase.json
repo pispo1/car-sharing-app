@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "public": "frontend",
+    "rewrites": [
+      {
+        "source": "/**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "functions": {
+    "source": "backend/functions"
+  }
+}
