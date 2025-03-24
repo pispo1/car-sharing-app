@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MegaKotxea App</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="env.js"></script>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -142,7 +143,7 @@
       .highlight-driver-not-needed {
         background-color: #ddffdd; /* Light red to indicate need for more drivers */
         color: #008000; /* Dark red text */
-      }      
+      }
       .highlight-driver-needed {
         background-color: #ffdddd; /* Light red to indicate need for more drivers */
         color: #d80000; /* Dark red text */
@@ -156,29 +157,42 @@
       <input type="email" id="email" placeholder="Email" />
       <input type="password" id="password" placeholder="Password" />
       <button id="login">Iniciar</button>
-      <p><a href="javascript:void(0);" id="forgotPasswordLink">Forgot your password?</a></p>
+      <p>
+        <a href="javascript:void(0);" id="forgotPasswordLink"
+          >Forgot your password?</a
+        >
+      </p>
     </div>
 
-    <div id="resetPasswordForm" style="display: none;">
+    <div id="resetPasswordForm" style="display: none">
       <input type="email" id="resetEmail" placeholder="Enter your email" />
       <button id="resetPasswordBtn">Reset Password</button>
       <button id="cancelResetBtn">Cancel</button>
-      <p id="resetErrorMsg" style="color: red;"></p>
+      <p id="resetErrorMsg" style="color: red"></p>
     </div>
 
-    <div id="resetForm" style="display: none;">
-      <input type="password" id="newPassword" placeholder="New Password" required />
-      <input type="password" id="confirmPassword" placeholder="Confirm Password" required />
+    <div id="resetForm" style="display: none">
+      <input
+        type="password"
+        id="newPassword"
+        placeholder="New Password"
+        required
+      />
+      <input
+        type="password"
+        id="confirmPassword"
+        placeholder="Confirm Password"
+        required
+      />
       <button id="resetPasswordButton">Reset Password</button>
-      <p id="errorMessage" style="color: red; display: none;"></p>
+      <p id="errorMessage" style="color: red; display: none"></p>
     </div>
 
     <p id="errorMsg"></p>
 
     <div id="mainScreen">
-
       <div id="weekPickerContainer">
-        <input type="week" id="weekPicker" />        
+        <input type="week" id="weekPicker" />
         <button id="clipboard">📋</button>
         <button id="csv">⬇️</button>
         <button id="logout">Cerrar</button>
@@ -189,21 +203,14 @@
       <div id="statsContainer">
         <div id="userStats"></div>
       </div>
-      <textarea id="generatedMessage" style="width:100%; height:200px;display:none;" readonly></textarea>
+      <textarea
+        id="generatedMessage"
+        style="width: 100%; height: 200px; display: none"
+        readonly
+      ></textarea>
     </div>
 
     <script>
-      let supabaseUrl = null;
-      let supabaseKey = null;
-
-      if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-        supabaseUrl = "http://127.0.0.1:54321";
-        supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"; 
-      } else {
-        supabaseUrl = "https://ypnofyhsyelzctbylrrs.supabase.co";
-        supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlwbm9meWhzeWVsemN0YnlscnJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjE3NjksImV4cCI6MjA1Nzk5Nzc2OX0.mq_ggLl9Khhb9UK0lojrOQrTGSHYR6H3-Xt6_WvpXPk"; 
-      }
-
       let access_token = null;
       let refresh_token = null;
 
@@ -212,8 +219,8 @@
         document.getElementById("loginForm").style.display = "none";
         const hash = window.location.hash;
         const params = new URLSearchParams(hash.substring(1)); // Remove the '#' character
-        access_token = params.get('access_token');
-        refresh_token = params.get('refresh_token');
+        access_token = params.get("access_token");
+        refresh_token = params.get("refresh_token");
       }
 
       console.log("Using Supabase URL:", supabaseUrl);
@@ -258,14 +265,14 @@
         confirmButton.textContent = "OK";
         confirmButton.style.marginRight = "10px";
         confirmButton.onclick = () => {
-            callback(input.value); // Pass input value to callback
-            document.body.removeChild(modal);
+          callback(input.value); // Pass input value to callback
+          document.body.removeChild(modal);
         };
 
         const cancelButton = document.createElement("button");
         cancelButton.textContent = "Cancel";
         cancelButton.onclick = () => {
-            document.body.removeChild(modal);
+          document.body.removeChild(modal);
         };
 
         // Append elements
@@ -361,19 +368,19 @@
 
       function getWeekNumber(date) {
         const startOfYear = new Date(date.getFullYear(), 0, 1);
-        const startOfYearDay = startOfYear.getDay(); 
-        
+        const startOfYearDay = startOfYear.getDay();
+
         const startOfWeek = new Date(startOfYear);
         startOfWeek.setDate(startOfYear.getDate() - startOfYearDay + 1);
-        
+
         const diffTime = date - startOfWeek;
         const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
-        
+
         const weekNumber = Math.floor(diffDays / 7) + 1;
-        
+
         return weekNumber;
       }
-      
+
       function saveCSV(csvData) {
         const blob = new Blob([csvData], { type: "text/csv" });
 
@@ -473,7 +480,8 @@
           const row = document.createElement("tr");
 
           const emailCell = document.createElement("td");
-          emailCell.textContent = stat.first_name + (stat.last_name ? " " + stat.last_name : "");
+          emailCell.textContent =
+            stat.first_name + (stat.last_name ? " " + stat.last_name : "");
           row.appendChild(emailCell);
 
           const totalRatioCell = document.createElement("td");
@@ -527,7 +535,7 @@
         });
 
         const [day, month, year] = currentDate.split("/");
-        return `${year}-${month}-${day}`; 
+        return `${year}-${month}-${day}`;
       }
 
       function displayTrips(trips) {
@@ -559,7 +567,11 @@
                 return trip.is_driver ? acc + trip.profiles.seats : acc;
               }, 0)
             : 0;
-          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate}) ${groupedTrips[formattedDate]!=null ? groupedTrips[formattedDate].length+'/'+totalSeats: '0'}`;
+          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate}) ${
+            groupedTrips[formattedDate] != null
+              ? groupedTrips[formattedDate].length + "/" + totalSeats
+              : "0"
+          }`;
 
           tripsContainer.appendChild(dateHeader);
 
@@ -570,9 +582,11 @@
             const tripList = document.createElement("ul");
             groupedTrips[formattedDate].forEach((trip) => {
               const tripItem = document.createElement("li");
-              tripItem.textContent = `${trip.profiles.first_name}${trip.profiles.last_name ? " " + trip.profiles.last_name : ""}${
-                trip.is_driver ? "🚗" : "🧑‍🦯"              
-              }${trip.notes ? `(${trip.notes})` : ""}`;
+              tripItem.textContent = `${trip.profiles.first_name}${
+                trip.profiles.last_name ? " " + trip.profiles.last_name : ""
+              }${trip.is_driver ? "🚗" : "🧑‍🦯"}${
+                trip.notes ? `(${trip.notes})` : ""
+              }`;
 
               if (trip.is_driver) {
                 seats = seats + trip.profiles.seats;
@@ -590,9 +604,13 @@
 
                 const notesButton = document.createElement("button");
                 notesButton.textContent = "📝";
-                notesButton.onclick = () => { 
+                notesButton.onclick = () => {
                   showPrompt(trip.notes, (notes) => {
-                    addTrip(formattedDate, trip.is_driver, notes=="" ? null : notes);
+                    addTrip(
+                      formattedDate,
+                      trip.is_driver,
+                      notes == "" ? null : notes
+                    );
                   });
                 };
                 buttons.appendChild(notesButton);
@@ -611,7 +629,7 @@
 
             if (passengers > seats) {
               dateHeader.classList.add("highlight-driver-needed");
-            }else{
+            } else {
               dateHeader.classList.add("highlight-driver-not-needed");
             }
 
@@ -625,14 +643,16 @@
             if (!isTripAlready || (isTripAlready && !isTripAlready.is_driver)) {
               const addDriverButton = document.createElement("button");
               addDriverButton.textContent = "+ 🚗";
-              addDriverButton.onclick = () => addTrip(formattedDate, true, null);
+              addDriverButton.onclick = () =>
+                addTrip(formattedDate, true, null);
               buttonContainer.appendChild(addDriverButton);
             }
 
             if (!isTripAlready || (isTripAlready && isTripAlready.is_driver)) {
               const addPassengerButton = document.createElement("button");
               addPassengerButton.textContent = "+ 🧑‍🦯";
-              addPassengerButton.onclick = () => addTrip(formattedDate, false, null);
+              addPassengerButton.onclick = () =>
+                addTrip(formattedDate, false, null);
               buttonContainer.appendChild(addPassengerButton);
             }
 
@@ -641,29 +661,36 @@
         }
 
         const message = generateMessage(trips);
-        const generatedMessageField = document.getElementById("generatedMessage");
+        const generatedMessageField =
+          document.getElementById("generatedMessage");
         generatedMessageField.value = message;
       }
 
       function groupTripsByDay(trips) {
         const grouped = {
-          "Astelehena": [],
-          "Asteartea": [],
-          "Asteazkena": [],
-          "Osteguna": [],
-          "Ostirala": []
+          Astelehena: [],
+          Asteartea: [],
+          Asteazkena: [],
+          Osteguna: [],
+          Ostirala: [],
         };
 
-        trips.forEach(trip => {
+        trips.forEach((trip) => {
           const date = new Date(trip.trip_date);
           const day = date.getDay();
 
-          const weekday = ["Astelehena", "Asteartea", "Asteazkena", "Osteguna", "Ostirala"][day-1];
+          const weekday = [
+            "Astelehena",
+            "Asteartea",
+            "Asteazkena",
+            "Osteguna",
+            "Ostirala",
+          ][day - 1];
 
           grouped[weekday].push({
             name: `${trip.profiles.first_name}${trip.profiles.last_name || ""}`,
             is_driver: trip.is_driver,
-            notes: trip.notes
+            notes: trip.notes,
           });
         });
 
@@ -674,10 +701,12 @@
         const tripDetails = groupTripsByDay(trips);
         let message = "";
 
-        Object.keys(tripDetails).forEach(day => {
+        Object.keys(tripDetails).forEach((day) => {
           message += `== ${day} ==\n`;
-          tripDetails[day].forEach(trip => {
-            message += `${trip.name}${trip.is_driver ? "🚗" : "🧑‍🦯"}${trip.notes ? `(${trip.notes})` : ""}\n`;
+          tripDetails[day].forEach((trip) => {
+            message += `${trip.name}${trip.is_driver ? "🚗" : "🧑‍🦯"}${
+              trip.notes ? `(${trip.notes})` : ""
+            }\n`;
           });
           message += `\n`;
         });
@@ -689,7 +718,7 @@
         const newTrip = {
           trip_date,
           is_driver,
-          notes
+          notes,
         };
 
         const { data, error } = await supabasecli.functions.invoke(`trips`, {
@@ -733,40 +762,46 @@
         const email = document.getElementById("resetEmail").value;
 
         const { error } = await supabasecli.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + "/update-password"
+          redirectTo: window.location.origin + "/update-password",
         });
 
         if (error) {
           console.error("Reset Password Error:", error.message);
           document.getElementById("resetErrorMsg").textContent = error.message;
         } else {
-          document.getElementById("resetErrorMsg").textContent = "Check your email for the reset link!";
+          document.getElementById("resetErrorMsg").textContent =
+            "Check your email for the reset link!";
         }
       }
 
       async function resetPassword() {
         const newPassword = document.getElementById("newPassword").value;
-        const confirmPassword = document.getElementById("confirmPassword").value;
+        const confirmPassword =
+          document.getElementById("confirmPassword").value;
 
         // Validate that both passwords match
         if (newPassword !== confirmPassword) {
-          document.getElementById("errorMessage").textContent = "Passwords do not match!";
+          document.getElementById("errorMessage").textContent =
+            "Passwords do not match!";
           document.getElementById("errorMessage").style.display = "block";
           return;
         }
 
         const { data: sessionData, error: sessionError } =
-        await supabasecli.auth.setSession({
-          access_token: access_token,
-          refresh_token: refresh_token,
-        });
+          await supabasecli.auth.setSession({
+            access_token: access_token,
+            refresh_token: refresh_token,
+          });
         if (sessionError) {
           // Handle session error
-          document.getElementById("errorMessage").textContent = sessionError.message;
+          document.getElementById("errorMessage").textContent =
+            sessionError.message;
           document.getElementById("errorMessage").style.display = "block";
         } else {
           // Update the user's password with Supabase
-          const { error } = await supabasecli.auth.updateUser({ password: newPassword });
+          const { error } = await supabasecli.auth.updateUser({
+            password: newPassword,
+          });
 
           if (error) {
             // Display error message
@@ -774,46 +809,62 @@
             document.getElementById("errorMessage").style.display = "block";
           } else {
             // Password updated successfully
-            document.getElementById("errorMessage").textContent = "Your password has been updated successfully!";
+            document.getElementById("errorMessage").textContent =
+              "Your password has been updated successfully!";
             document.getElementById("errorMessage").style.display = "block";
             document.getElementById("resetForm").reset();
           }
-        }      
+        }
       }
 
       function copyToClipboardButton() {
         const messageElement = document.getElementById("generatedMessage");
-        if (messageElement.style.display === "none" || messageElement.style.display === "") {
+        if (
+          messageElement.style.display === "none" ||
+          messageElement.style.display === ""
+        ) {
           messageElement.style.display = "block"; // Show the element
         } else {
           messageElement.style.display = "none"; // Hide the element
         }
       }
 
-
       document.getElementById("login").addEventListener("click", login);
       document.getElementById("csv").addEventListener("click", generateCSV);
-      document.getElementById("clipboard").addEventListener("click", copyToClipboardButton);
+      document
+        .getElementById("clipboard")
+        .addEventListener("click", copyToClipboardButton);
       document.getElementById("logout").addEventListener("click", logout);
       document
         .getElementById("weekPicker")
-        .addEventListener("change", function(){fetchTrips(); fetchTripsStats();}); 
+        .addEventListener("change", function () {
+          fetchTrips();
+          fetchTripsStats();
+        });
 
-      document.getElementById("forgotPasswordLink").addEventListener("click", function() {
-        document.getElementById("loginForm").style.display = "none";
-        document.getElementById("resetPasswordForm").style.display = "block";
-      });
+      document
+        .getElementById("forgotPasswordLink")
+        .addEventListener("click", function () {
+          document.getElementById("loginForm").style.display = "none";
+          document.getElementById("resetPasswordForm").style.display = "block";
+        });
 
-      document.getElementById("resetPasswordBtn").addEventListener("click", resetPasswordEmail);
+      document
+        .getElementById("resetPasswordBtn")
+        .addEventListener("click", resetPasswordEmail);
 
-      document.getElementById("cancelResetBtn").addEventListener("click", function() {
-        document.getElementById("resetPasswordForm").style.display = "none";
-        document.getElementById("loginForm").style.display = "block";
-        document.getElementById("resetEmail").value = "";
-        document.getElementById("resetErrorMsg").textContent = "";
-      });
+      document
+        .getElementById("cancelResetBtn")
+        .addEventListener("click", function () {
+          document.getElementById("resetPasswordForm").style.display = "none";
+          document.getElementById("loginForm").style.display = "block";
+          document.getElementById("resetEmail").value = "";
+          document.getElementById("resetErrorMsg").textContent = "";
+        });
 
-      document.getElementById("resetPasswordButton").addEventListener("click", resetPassword);
+      document
+        .getElementById("resetPasswordButton")
+        .addEventListener("click", resetPassword);
 
       if (window.location.pathname === "/") {
         checkSession();

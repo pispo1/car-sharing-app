@@ -3,6 +3,7 @@
     "public": "frontend",
     "ignore": [
       "firebase.json",
+      "env.local.js",
       "**/.*",
       "**/node_modules/**"
     ],
