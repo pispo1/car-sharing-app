@@ -1,26 +1,823 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Sharing App</title>
-    <script defer src="app.js"></script>
-</head>
-<body>
-    <h1>Car Sharing App</h1>
-    <label for="week">Week:</label>
-    <input type="number" id="week" min="1" max="52">
-    <label for="day">Day:</label>
-    <input type="text" id="day">
-    <label for="name">Name:</label>
-    <input type="text" id="name">
-    <label for="role">Role:</label>
-    <select id="role">
-        <option value="driver">Driver</option>
-        <option value="passenger">Passenger</option>
-    </select>
-    <button onclick="registerTrip()">Register</button>
-    <h2>Weekly Trips</h2>
-    <pre id="trips"></pre>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MegaKotxea App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f7f7f7;
+      }
+      h1 {
+        font-size: 20px;
+        text-align: center;
+        background-color: #007bff;
+        color: white;
+        padding: 10px;
+      }
+      #mainScreen {
+        display: none;
+      }
+      #loginForm,
+      #mainScreen,
+      #resetPasswordForm,
+      #resetForm {
+        max-width: 400px;
+        margin: 20px auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      input,
+      button {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ccc;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        padding: 8px; /* Compact padding */
+        font-size: 12px; /* Slightly smaller font for a compact look */
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+      #loading {
+        display: none;
+        text-align: center;
+      }
+      #errorMsg {
+        color: red;
+      }
+      #tripsContainer,
+      #statsContainer,
+      #weekPickerContainer {
+        margin: 20px;
+      }
+      .trip-item {
+        margin: 10px 0;
+      }
+      .trip-item button {
+        margin-left: 10px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      li {
+        font-size: 12px;
+        background: white;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .trip-actions {
+        display: flex;
+        gap: 5px;
+      }
+      #statsContainer table {
+        width: 100%;
+        max-width: 600px;
+        margin: auto;
+        border-collapse: collapse;
+        background: white;
+        font-size: 14px;
+      }
+      th,
+      td {
+        font-size: 12px;
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+      th {
+        background-color: #007bff;
+        color: white;
+      }
+      #errorMsg {
+        color: red;
+        margin-top: 10px;
+      }
+      #logout {
+        background-color: #f39c12;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        width: auto;
+        margin: 10px 0;
+      }
+      #logout:hover {
+        background-color: #e67e22;
+      }
+      .dateHeader {
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .tripActions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+      #weekPickerContainer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .highlight-driver-not-needed {
+        background-color: #ddffdd; /* Light red to indicate need for more drivers */
+        color: #008000; /* Dark red text */
+      }      
+      .highlight-driver-needed {
+        background-color: #ffdddd; /* Light red to indicate need for more drivers */
+        color: #d80000; /* Dark red text */
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MegaKotxea</h1>
+
+    <div id="loginForm">
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <button id="login">Iniciar</button>
+      <p><a href="javascript:void(0);" id="forgotPasswordLink">Forgot your password?</a></p>
+    </div>
+
+    <div id="resetPasswordForm" style="display: none;">
+      <input type="email" id="resetEmail" placeholder="Enter your email" />
+      <button id="resetPasswordBtn">Reset Password</button>
+      <button id="cancelResetBtn">Cancel</button>
+      <p id="resetErrorMsg" style="color: red;"></p>
+    </div>
+
+    <div id="resetForm" style="display: none;">
+      <input type="password" id="newPassword" placeholder="New Password" required />
+      <input type="password" id="confirmPassword" placeholder="Confirm Password" required />
+      <button id="resetPasswordButton">Reset Password</button>
+      <p id="errorMessage" style="color: red; display: none;"></p>
+    </div>
+
+    <p id="errorMsg"></p>
+
+    <div id="mainScreen">
+
+      <div id="weekPickerContainer">
+        <input type="week" id="weekPicker" />        
+        <button id="clipboard">📋</button>
+        <button id="csv">⬇️</button>
+        <button id="logout">Cerrar</button>
+      </div>
+
+      <div id="loading">Cargando viajes...</div>
+      <div id="tripsContainer"></div>
+      <div id="statsContainer">
+        <div id="userStats"></div>
+      </div>
+      <textarea id="generatedMessage" style="width:100%; height:200px;display:none;" readonly></textarea>
+    </div>
+
+    <script>
+      let supabaseUrl = null;
+      let supabaseKey = null;
+
+      if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        supabaseUrl = "http://127.0.0.1:54321";
+        supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"; 
+      } else {
+        supabaseUrl = "https://ypnofyhsyelzctbylrrs.supabase.co";
+        supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlwbm9meWhzeWVsemN0YnlscnJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjE3NjksImV4cCI6MjA1Nzk5Nzc2OX0.mq_ggLl9Khhb9UK0lojrOQrTGSHYR6H3-Xt6_WvpXPk"; 
+      }
+
+      let access_token = null;
+      let refresh_token = null;
+
+      if (window.location.pathname.startsWith("/update-password")) {
+        document.getElementById("resetForm").style.display = "block";
+        document.getElementById("loginForm").style.display = "none";
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.substring(1)); // Remove the '#' character
+        access_token = params.get('access_token');
+        refresh_token = params.get('refresh_token');
+      }
+
+      console.log("Using Supabase URL:", supabaseUrl);
+
+      const supabasecli = supabase.createClient(supabaseUrl, supabaseKey);
+
+      let USER = null;
+
+      function showPrompt(iniContent, callback) {
+        // Create the modal background
+        const modal = document.createElement("div");
+        modal.style.position = "fixed";
+        modal.style.top = "0";
+        modal.style.left = "0";
+        modal.style.width = "100%";
+        modal.style.height = "100%";
+        modal.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+        modal.style.display = "flex";
+        modal.style.justifyContent = "center";
+        modal.style.alignItems = "center";
+        modal.style.zIndex = "1000";
+
+        // Create the prompt box
+        const promptBox = document.createElement("div");
+        promptBox.style.background = "white";
+        promptBox.style.padding = "20px";
+        promptBox.style.borderRadius = "10px";
+        promptBox.style.boxShadow = "0px 4px 6px rgba(0, 0, 0, 0.1)";
+        promptBox.style.textAlign = "center";
+
+        // Create the input field
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = iniContent;
+        input.placeholder = "Enter your notes";
+        input.style.width = "80%";
+        input.style.padding = "8px";
+        input.style.marginBottom = "10px";
+
+        // Create the buttons
+        const confirmButton = document.createElement("button");
+        confirmButton.textContent = "OK";
+        confirmButton.style.marginRight = "10px";
+        confirmButton.onclick = () => {
+            callback(input.value); // Pass input value to callback
+            document.body.removeChild(modal);
+        };
+
+        const cancelButton = document.createElement("button");
+        cancelButton.textContent = "Cancel";
+        cancelButton.onclick = () => {
+            document.body.removeChild(modal);
+        };
+
+        // Append elements
+        promptBox.appendChild(input);
+        promptBox.appendChild(document.createElement("br"));
+        promptBox.appendChild(confirmButton);
+        promptBox.appendChild(cancelButton);
+        modal.appendChild(promptBox);
+        document.body.appendChild(modal);
+
+        // Focus input field
+        input.focus();
+      }
+
+      function showError(msg) {
+        document.getElementById("errorMsg").textContent = msg;
+      }
+
+      function clearError() {
+        document.getElementById("errorMsg").textContent = "";
+      }
+
+      async function login() {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        const { data, error } = await supabasecli.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          console.error("Login Error:", error.message);
+          showError(error.message);
+        } else {
+          USER = data.user;
+          toggleUI(true);
+          clearError();
+        }
+      }
+
+      async function logout() {
+        const { error } = await supabasecli.auth.signOut();
+        if (error) {
+          console.error("Logout Error:", error.message);
+        } else {
+          toggleUI(false);
+        }
+      }
+
+      function toggleUI(loggedIn) {
+        document.getElementById("loginForm").style.display = loggedIn
+          ? "none"
+          : "block";
+        document.getElementById("mainScreen").style.display = loggedIn
+          ? "block"
+          : "none";
+
+        if (loggedIn) {
+          setCurrentWeek();
+          fetchTrips();
+          fetchTripsStats();
+        }
+      }
+
+      function getWeekRange(weekStr) {
+        const [year, week] = weekStr.split("-W");
+        const firstDayOfYear = new Date(Date.UTC(year, 0, 1));
+        let dayOfWeek = firstDayOfYear.getUTCDay();
+        let daysToAdd = dayOfWeek <= 1 ? 1 - dayOfWeek : 8 - dayOfWeek;
+        firstDayOfYear.setUTCDate(firstDayOfYear.getUTCDate() + daysToAdd);
+
+        const startOfWeek = new Date(firstDayOfYear);
+        startOfWeek.setUTCDate(
+          firstDayOfYear.getUTCDate() + (parseInt(week) - 2) * 7
+        );
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 6);
+
+        return {
+          start: startOfWeek.toISOString().split("T")[0],
+          end: endOfWeek.toISOString().split("T")[0],
+        };
+      }
+
+      function setCurrentWeek() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const week = getWeekNumber(today);
+        document.getElementById("weekPicker").value = `${year}-W${week}`;
+      }
+
+      function getWeekNumber(date) {
+        const startOfYear = new Date(date.getFullYear(), 0, 1);
+        const startOfYearDay = startOfYear.getDay(); 
+        
+        const startOfWeek = new Date(startOfYear);
+        startOfWeek.setDate(startOfYear.getDate() - startOfYearDay + 1);
+        
+        const diffTime = date - startOfWeek;
+        const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
+        
+        const weekNumber = Math.floor(diffDays / 7) + 1;
+        
+        return weekNumber;
+      }
+      
+      function saveCSV(csvData) {
+        const blob = new Blob([csvData], { type: "text/csv" });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "trips.csv";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+      }
+
+      async function generateCSV() {
+        const { data, error } = await supabasecli.functions.invoke(
+          `trips?csv=true`,
+          {
+            method: "GET",
+          }
+        );
+
+        if (error) {
+          console.error("Error downloading trips:", error.message);
+          showError("Error downloading trips");
+        } else {
+          saveCSV(data);
+        }
+      }
+
+      async function fetchTrips() {
+        document.getElementById("loading").style.display = "block";
+        displayTrips([]);
+        const weekStr = document.getElementById("weekPicker").value;
+        if (!weekStr) return;
+
+        const { start, end } = getWeekRange(weekStr);
+
+        const { data, error } = await supabasecli.functions.invoke(
+          `trips?start=${start}&end=${end}`,
+          {
+            method: "GET",
+          }
+        );
+
+        document.getElementById("loading").style.display = "none";
+
+        if (error) {
+          console.error("Error fetching trips:", error.message);
+          showError("Error fetching trips");
+        } else {
+          displayTrips(data.trips);
+        }
+      }
+
+      async function fetchTripsStats() {
+        const { data, error } = await supabasecli.functions.invoke(
+          `trips?stats=true`,
+          {
+            method: "GET",
+          }
+        );
+
+        if (error) {
+          console.error("Error fetching trips stats:", error.message);
+          showError("Error fetching trips stats");
+        } else {
+          displayStats(data.stats);
+        }
+      }
+
+      function displayStats(stats) {
+        const container = document.getElementById("userStats");
+
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+        const table = document.createElement("table");
+        table.setAttribute("border", "1");
+
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        const headers = ["Usuario", "Ratio Total", "Ratio Consolidado"];
+
+        headers.forEach((headerText) => {
+          const th = document.createElement("th");
+          th.textContent = headerText;
+          headerRow.appendChild(th);
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+
+        stats.forEach((stat) => {
+          const row = document.createElement("tr");
+
+          const emailCell = document.createElement("td");
+          emailCell.textContent = stat.first_name + (stat.last_name ? " " + stat.last_name : "");
+          row.appendChild(emailCell);
+
+          const totalRatioCell = document.createElement("td");
+          totalRatioCell.textContent = `${stat.driver_ratio.toFixed(2)} (${
+            stat.driver_trips
+          }/${stat.passenger_trips + stat.driver_trips})`;
+          row.appendChild(totalRatioCell);
+
+          const consolidatedRatioCell = document.createElement("td");
+          consolidatedRatioCell.textContent = `${stat.driver_ratio_until_today.toFixed(
+            2
+          )}  (${stat.driver_trips_until_today}/${
+            stat.passenger_trips_until_today + stat.driver_trips_until_today
+          })`;
+          row.appendChild(consolidatedRatioCell);
+
+          tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+
+        container.appendChild(table);
+      }
+
+      function groupTripsByDate(trips) {
+        const groupedTrips = {};
+
+        trips.forEach((trip) => {
+          const date = trip.trip_date;
+          if (!groupedTrips[date]) {
+            groupedTrips[date] = [];
+          }
+          groupedTrips[date].push(trip);
+        });
+
+        for (const date in groupedTrips) {
+          groupedTrips[date].sort(
+            (a, b) => new Date(a.trip_time) - new Date(b.trip_time)
+          );
+        }
+
+        return groupedTrips;
+      }
+
+      function getCurrentDateInMadrid() {
+        const currentDate = new Date().toLocaleString("en-GB", {
+          timeZone: "Europe/Madrid",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        });
+
+        const [day, month, year] = currentDate.split("/");
+        return `${year}-${month}-${day}`; 
+      }
+
+      function displayTrips(trips) {
+        const tripsContainer = document.getElementById("tripsContainer");
+
+        while (tripsContainer.firstChild) {
+          tripsContainer.removeChild(tripsContainer.firstChild);
+        }
+
+        const weekStr = document.getElementById("weekPicker").value;
+        const { start, end } = getWeekRange(weekStr);
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+
+        const weekdays = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
+        const groupedTrips = groupTripsByDate(trips);
+
+        const nowDate = getCurrentDateInMadrid();
+
+        for (let i = 0; i < 5; i++) {
+          const currentDate = new Date(startDate);
+          currentDate.setDate(startDate.getDate() + i);
+
+          const formattedDate = currentDate.toISOString().split("T")[0];
+          const dateHeader = document.createElement("h5");
+          dateHeader.className = "dateHeader";
+          const totalSeats = groupedTrips[formattedDate]
+            ? groupedTrips[formattedDate].reduce((acc, trip) => {
+                return trip.is_driver ? acc + trip.profiles.seats : acc;
+              }, 0)
+            : 0;
+          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate}) ${groupedTrips[formattedDate]!=null ? groupedTrips[formattedDate].length+'/'+totalSeats: '0'}`;
+
+          tripsContainer.appendChild(dateHeader);
+
+          let isTripAlready = null;
+          if (groupedTrips[formattedDate]) {
+            let passengers = 0;
+            let seats = 0;
+            const tripList = document.createElement("ul");
+            groupedTrips[formattedDate].forEach((trip) => {
+              const tripItem = document.createElement("li");
+              tripItem.textContent = `${trip.profiles.first_name}${trip.profiles.last_name ? " " + trip.profiles.last_name : ""}${
+                trip.is_driver ? "🚗" : "🧑‍🦯"              
+              }${trip.notes ? `(${trip.notes})` : ""}`;
+
+              if (trip.is_driver) {
+                seats = seats + trip.profiles.seats;
+              }
+              passengers++;
+
+              if (
+                trip.profiles.email === USER.email &&
+                formattedDate >= nowDate
+              ) {
+                tripItem.style.fontWeight = "bold";
+
+                const buttons = document.createElement("div");
+                buttons.className = "tripActions";
+
+                const notesButton = document.createElement("button");
+                notesButton.textContent = "📝";
+                notesButton.onclick = () => { 
+                  showPrompt(trip.notes, (notes) => {
+                    addTrip(formattedDate, trip.is_driver, notes=="" ? null : notes);
+                  });
+                };
+                buttons.appendChild(notesButton);
+
+                const removeButton = document.createElement("button");
+                removeButton.textContent = "🗑️";
+                removeButton.onclick = () => removeTrip(trip.trip_date);
+                buttons.appendChild(removeButton);
+
+                tripItem.appendChild(buttons);
+
+                isTripAlready = trip;
+              }
+              tripList.appendChild(tripItem);
+            });
+
+            if (passengers > seats) {
+              dateHeader.classList.add("highlight-driver-needed");
+            }else{
+              dateHeader.classList.add("highlight-driver-not-needed");
+            }
+
+            tripsContainer.appendChild(tripList);
+          }
+
+          if (formattedDate >= nowDate) {
+            const buttonContainer = document.createElement("div");
+            buttonContainer.className = "tripActions";
+
+            if (!isTripAlready || (isTripAlready && !isTripAlready.is_driver)) {
+              const addDriverButton = document.createElement("button");
+              addDriverButton.textContent = "+ 🚗";
+              addDriverButton.onclick = () => addTrip(formattedDate, true, null);
+              buttonContainer.appendChild(addDriverButton);
+            }
+
+            if (!isTripAlready || (isTripAlready && isTripAlready.is_driver)) {
+              const addPassengerButton = document.createElement("button");
+              addPassengerButton.textContent = "+ 🧑‍🦯";
+              addPassengerButton.onclick = () => addTrip(formattedDate, false, null);
+              buttonContainer.appendChild(addPassengerButton);
+            }
+
+            dateHeader.appendChild(buttonContainer);
+          }
+        }
+
+        const message = generateMessage(trips);
+        const generatedMessageField = document.getElementById("generatedMessage");
+        generatedMessageField.value = message;
+      }
+
+      function groupTripsByDay(trips) {
+        const grouped = {
+          "Astelehena": [],
+          "Asteartea": [],
+          "Asteazkena": [],
+          "Osteguna": [],
+          "Ostirala": []
+        };
+
+        trips.forEach(trip => {
+          const date = new Date(trip.trip_date);
+          const day = date.getDay();
+
+          const weekday = ["Astelehena", "Asteartea", "Asteazkena", "Osteguna", "Ostirala"][day-1];
+
+          grouped[weekday].push({
+            name: `${trip.profiles.first_name}${trip.profiles.last_name || ""}`,
+            is_driver: trip.is_driver,
+            notes: trip.notes
+          });
+        });
+
+        return grouped;
+      }
+
+      function generateMessage(trips) {
+        const tripDetails = groupTripsByDay(trips);
+        let message = "";
+
+        Object.keys(tripDetails).forEach(day => {
+          message += `== ${day} ==\n`;
+          tripDetails[day].forEach(trip => {
+            message += `${trip.name}${trip.is_driver ? "🚗" : "🧑‍🦯"}${trip.notes ? `(${trip.notes})` : ""}\n`;
+          });
+          message += `\n`;
+        });
+
+        return message;
+      }
+
+      async function addTrip(trip_date, is_driver, notes) {
+        const newTrip = {
+          trip_date,
+          is_driver,
+          notes
+        };
+
+        const { data, error } = await supabasecli.functions.invoke(`trips`, {
+          method: "POST",
+          body: newTrip,
+        });
+
+        if (error) {
+          showError("Error adding trip");
+        } else {
+          fetchTrips();
+          fetchTripsStats();
+        }
+      }
+
+      async function removeTrip(tripDate) {
+        const { error } = await supabasecli.functions.invoke(
+          `trips/${tripDate}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (error) {
+          showError("Error removing trip");
+        } else {
+          fetchTrips();
+          fetchTripsStats();
+        }
+      }
+
+      async function checkSession() {
+        const { data } = await supabasecli.auth.getSession();
+        if (data?.session) {
+          USER = data.session.user;
+          toggleUI(true);
+        }
+      }
+
+      async function resetPasswordEmail() {
+        const email = document.getElementById("resetEmail").value;
+
+        const { error } = await supabasecli.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + "/update-password"
+        });
+
+        if (error) {
+          console.error("Reset Password Error:", error.message);
+          document.getElementById("resetErrorMsg").textContent = error.message;
+        } else {
+          document.getElementById("resetErrorMsg").textContent = "Check your email for the reset link!";
+        }
+      }
+
+      async function resetPassword() {
+        const newPassword = document.getElementById("newPassword").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+
+        // Validate that both passwords match
+        if (newPassword !== confirmPassword) {
+          document.getElementById("errorMessage").textContent = "Passwords do not match!";
+          document.getElementById("errorMessage").style.display = "block";
+          return;
+        }
+
+        const { data: sessionData, error: sessionError } =
+        await supabasecli.auth.setSession({
+          access_token: access_token,
+          refresh_token: refresh_token,
+        });
+        if (sessionError) {
+          // Handle session error
+          document.getElementById("errorMessage").textContent = sessionError.message;
+          document.getElementById("errorMessage").style.display = "block";
+        } else {
+          // Update the user's password with Supabase
+          const { error } = await supabasecli.auth.updateUser({ password: newPassword });
+
+          if (error) {
+            // Display error message
+            document.getElementById("errorMessage").textContent = error.message;
+            document.getElementById("errorMessage").style.display = "block";
+          } else {
+            // Password updated successfully
+            document.getElementById("errorMessage").textContent = "Your password has been updated successfully!";
+            document.getElementById("errorMessage").style.display = "block";
+            document.getElementById("resetForm").reset();
+          }
+        }      
+      }
+
+      function copyToClipboardButton() {
+        const messageElement = document.getElementById("generatedMessage");
+        if (messageElement.style.display === "none" || messageElement.style.display === "") {
+          messageElement.style.display = "block"; // Show the element
+        } else {
+          messageElement.style.display = "none"; // Hide the element
+        }
+      }
+
+
+      document.getElementById("login").addEventListener("click", login);
+      document.getElementById("csv").addEventListener("click", generateCSV);
+      document.getElementById("clipboard").addEventListener("click", copyToClipboardButton);
+      document.getElementById("logout").addEventListener("click", logout);
+      document
+        .getElementById("weekPicker")
+        .addEventListener("change", function(){fetchTrips(); fetchTripsStats();}); 
+
+      document.getElementById("forgotPasswordLink").addEventListener("click", function() {
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("resetPasswordForm").style.display = "block";
+      });
+
+      document.getElementById("resetPasswordBtn").addEventListener("click", resetPasswordEmail);
+
+      document.getElementById("cancelResetBtn").addEventListener("click", function() {
+        document.getElementById("resetPasswordForm").style.display = "none";
+        document.getElementById("loginForm").style.display = "block";
+        document.getElementById("resetEmail").value = "";
+        document.getElementById("resetErrorMsg").textContent = "";
+      });
+
+      document.getElementById("resetPasswordButton").addEventListener("click", resetPassword);
+
+      if (window.location.pathname === "/") {
+        checkSession();
+      }
+    </script>
+  </body>
 </html>
