@@ -21,4 +21,4 @@ jobs:
         with:
           version: latest
 
-      - run: supabase functions deploy --project-ref $PROJECT_ID --path backend/supabase/functions
+      - run: supabase functions deploy --project-ref $PROJECT_ID --workdir backend
