@@ -584,7 +584,7 @@
               const tripItem = document.createElement("li");
               tripItem.textContent = `${trip.profiles.first_name}${
                 trip.profiles.last_name ? " " + trip.profiles.last_name : ""
-              }${trip.is_driver ? "🚗" : "🧑‍🦯"}${
+              }${trip.is_driver ? "🚗" : "👤"}${
                 trip.notes ? `(${trip.notes})` : ""
               }`;
 
@@ -650,7 +650,7 @@
 
             if (!isTripAlready || (isTripAlready && isTripAlready.is_driver)) {
               const addPassengerButton = document.createElement("button");
-              addPassengerButton.textContent = "+ 🧑‍🦯";
+              addPassengerButton.textContent = "+ 👤";
               addPassengerButton.onclick = () =>
                 addTrip(formattedDate, false, null);
               buttonContainer.appendChild(addPassengerButton);
@@ -704,7 +704,7 @@
         Object.keys(tripDetails).forEach((day) => {
           message += `== ${day} ==\n`;
           tripDetails[day].forEach((trip) => {
-            message += `${trip.name}${trip.is_driver ? "🚗" : "🧑‍🦯"}${
+            message += `${trip.name}${trip.is_driver ? "🚗" : "👤"}${
               trip.notes ? `(${trip.notes})` : ""
             }\n`;
           });
