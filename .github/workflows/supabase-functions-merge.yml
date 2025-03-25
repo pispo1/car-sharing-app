@@ -1,4 +1,4 @@
-name: Deploy Function
+name: Deploy to Supabase Function on merge
 
 on:
   push:
