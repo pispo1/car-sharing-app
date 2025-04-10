@@ -361,9 +361,11 @@
 
       function setCurrentWeek() {
         const today = new Date();
-        const year = today.getFullYear();
-        const week = getWeekNumber(today);
-        document.getElementById("weekPicker").value = `${year}-W${week}`;
+        const day = today.getDay();
+        day.setDate(today.getDate() + (day === 6 ? 2 : day === 0 ? 1 : 0));
+        const year = day.getFullYear();
+        const week = getWeekNumber(day);
+        document.getElementById("weekPicker").value = `${year}-W${String(week).padStart(2, '0')}`;
       }
 
       function getWeekNumber(date) {
