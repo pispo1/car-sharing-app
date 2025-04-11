@@ -371,17 +371,7 @@
 
       function getWeekNumber(date) {
         const startOfYear = new Date(date.getFullYear(), 0, 1);
-        const startOfYearDay = startOfYear.getDay();
-
-        const startOfWeek = new Date(startOfYear);
-        startOfWeek.setDate(startOfYear.getDate() - startOfYearDay + 1);
-
-        const diffTime = date - startOfWeek;
-        const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
-
-        const weekNumber = Math.floor(diffDays / 7) + 1;
-
-        return weekNumber;
+        return Math.ceil((((date - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
       }
 
       function saveCSV(csvData) {
