@@ -3,7 +3,8 @@ CREATE TABLE profiles
   email text, 
   first_name text, 
   last_name text,
-  seats smallint not null default '5'::smallint,  
+  seats smallint not null default '5'::smallint,
+  is_active boolean NOT NULL DEFAULT true,
   PRIMARY KEY (id));
 
 
@@ -50,55 +51,59 @@ CREATE TRIGGER update_trip_updated_at
 
 CREATE OR REPLACE FUNCTION get_trip_ratios() 
 RETURNS TABLE (
-    email TEXT, 
-    first_name TEXT,
-    last_name TEXT,
-    driver_trips INT, 
-    passenger_trips INT, 
-    driver_ratio DOUBLE PRECISION, 
-    driver_trips_until_today INT, 
-    passenger_trips_until_today INT, 
-    driver_ratio_until_today DOUBLE PRECISION
+  email TEXT, 
+  first_name TEXT,
+  last_name TEXT,
+  driver_trips INT, 
+  passenger_trips INT, 
+  driver_ratio DOUBLE PRECISION, 
+  driver_trips_until_today INT, 
+  passenger_trips_until_today INT, 
+  driver_ratio_until_today DOUBLE PRECISION
 ) 
 SET search_path = 'public' AS $$
 BEGIN
     RETURN QUERY
     WITH user_stats AS (
-        SELECT
-            trips.user_id,
-            COUNT(*) FILTER (WHERE is_driver = true)::INT AS driver_trips,
-            COUNT(*) FILTER (WHERE is_driver = false)::INT AS passenger_trips,
-            COUNT(*) FILTER (WHERE is_driver = true AND trips.trip_date < CURRENT_DATE)::INT AS driver_trips_until_today,
-            COUNT(*) FILTER (WHERE is_driver = false AND trips.trip_date < CURRENT_DATE)::INT AS passenger_trips_until_today
-        FROM trips
-        GROUP BY trips.user_id
+      SELECT
+        trips.user_id,
+        COUNT(*) FILTER (WHERE is_driver = true)::INT AS driver_trips,
+        COUNT(*) FILTER (WHERE is_driver = false)::INT AS passenger_trips,
+        COUNT(*) FILTER (WHERE is_driver = true AND trips.trip_date < CURRENT_DATE)::INT AS driver_trips_until_today,
+        COUNT(*) FILTER (WHERE is_driver = false AND trips.trip_date < CURRENT_DATE)::INT AS passenger_trips_until_today
+      FROM trips
+      JOIN profiles ON trips.user_id = profiles.id
+      WHERE profiles.is_active = true
+      GROUP BY trips.user_id
     )
     SELECT
-        profiles.email,
-        profiles.first_name,
-        profiles.last_name,
-        user_stats.driver_trips,
-        user_stats.passenger_trips,
-        COALESCE(user_stats.driver_trips::DOUBLE PRECISION / NULLIF(user_stats.driver_trips + user_stats.passenger_trips, 0), 0) AS driver_ratio,
-        user_stats.driver_trips_until_today,
-        user_stats.passenger_trips_until_today,
-        COALESCE(user_stats.driver_trips_until_today::DOUBLE PRECISION / NULLIF(user_stats.driver_trips_until_today + user_stats.passenger_trips_until_today, 0), 0) AS driver_ratio_until_today
+      profiles.email,
+      profiles.first_name,
+      profiles.last_name,
+      user_stats.driver_trips,
+      user_stats.passenger_trips,
+      COALESCE(user_stats.driver_trips::DOUBLE PRECISION / NULLIF(user_stats.driver_trips + user_stats.passenger_trips, 0), 0) AS driver_ratio,
+      user_stats.driver_trips_until_today,
+      user_stats.passenger_trips_until_today,
+      COALESCE(user_stats.driver_trips_until_today::DOUBLE PRECISION / NULLIF(user_stats.driver_trips_until_today + user_stats.passenger_trips_until_today, 0), 0) AS driver_ratio_until_today
     FROM user_stats
     JOIN profiles ON user_stats.user_id = profiles.id
 
     UNION ALL
 
     SELECT 
-        NULL AS email,
-        'TOTAL' AS first_name,
-        NULL AS last_name,
-        COUNT(*) FILTER (WHERE is_driver = true)::INT,
-        COUNT(*) FILTER (WHERE is_driver = false)::INT,
-        COALESCE(COUNT(*) FILTER (WHERE is_driver = true)::DOUBLE PRECISION / NULLIF(COUNT(*) FILTER (WHERE is_driver = true) + COUNT(*) FILTER (WHERE is_driver = false), 0), 0),
-        COUNT(*) FILTER (WHERE is_driver = true AND trip_date < CURRENT_DATE)::INT,
-        COUNT(*) FILTER (WHERE is_driver = false AND trip_date < CURRENT_DATE)::INT,
-        COALESCE(COUNT(*) FILTER (WHERE is_driver = true AND trip_date < CURRENT_DATE)::DOUBLE PRECISION / NULLIF(COUNT(*) FILTER (WHERE is_driver = true AND trip_date < CURRENT_DATE) + COUNT(*) FILTER (WHERE is_driver = false AND trip_date < CURRENT_DATE), 0), 0)
+      NULL AS email,
+      'TOTAL' AS first_name,
+      NULL AS last_name,
+      COUNT(*) FILTER (WHERE is_driver = true)::INT,
+      COUNT(*) FILTER (WHERE is_driver = false)::INT,
+      COALESCE(COUNT(*) FILTER (WHERE is_driver = true)::DOUBLE PRECISION / NULLIF(COUNT(*) FILTER (WHERE is_driver = true) + COUNT(*) FILTER (WHERE is_driver = false), 0), 0),
+      COUNT(*) FILTER (WHERE is_driver = true AND trip_date < CURRENT_DATE)::INT,
+      COUNT(*) FILTER (WHERE is_driver = false AND trip_date < CURRENT_DATE)::INT,
+      COALESCE(COUNT(*) FILTER (WHERE is_driver = true AND trip_date < CURRENT_DATE)::DOUBLE PRECISION / NULLIF(COUNT(*) FILTER (WHERE is_driver = true AND trip_date < CURRENT_DATE) + COUNT(*) FILTER (WHERE is_driver = false AND trip_date < CURRENT_DATE), 0), 0)
     FROM trips
+    JOIN profiles ON trips.user_id = profiles.id
+    WHERE profiles.is_active = true
 
     ORDER BY driver_ratio ASC NULLS LAST;
 END;
