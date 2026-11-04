@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,18 +7,31 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="env.js"></script>
     <style>
+      :root {
+        --accent: #2c6b60;
+        --accent-hover: #dceae3;
+        --surface-soft: #edf3ee;
+        --success: #67917a;
+        --ink: #253b35;
+        --paper: #f8f7f3;
+        --muted: #57655e;
+        --line: #dfe7de;
+        --highlight: #f0f5e9;
+      }
       body {
         font-family: Arial, sans-serif;
         margin: 0;
         padding: 0;
-        background-color: #f7f7f7;
+        background-color: var(--paper);
+        color: var(--ink);
       }
       h1 {
         font-size: 20px;
         text-align: center;
-        background-color: #007bff;
-        color: white;
-        padding: 10px;
+        background-color: var(--surface-soft);
+        color: var(--accent);
+        border-bottom: 1px solid var(--line);
+        padding: 14px 10px;
       }
       #mainScreen {
         display: none;
@@ -27,7 +40,7 @@
       #mainScreen,
       #resetPasswordForm,
       #resetForm {
-        max-width: 400px;
+        max-width: 480px;
         margin: 20px auto;
         background: #fff;
         padding: 20px;
@@ -38,19 +51,22 @@
       button {
         padding: 8px;
         margin: 5px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--line);
       }
       button {
-        background-color: #007bff;
-        color: white;
-        border: none;
+        background-color: var(--surface-soft);
+        color: var(--accent);
+        border: 1px solid var(--line);
         cursor: pointer;
         padding: 8px; /* Compact padding */
         font-size: 12px; /* Slightly smaller font for a compact look */
       }
 
+      a { color: var(--accent); text-underline-offset: 3px; }
+      #weekPickerContainer button { background: var(--surface-soft); color: var(--ink); }
+      #weekPickerContainer button:hover { background: var(--accent-hover); }
       button:hover {
-        background-color: #0056b3;
+        background-color: var(--accent-hover);
       }
       #loading {
         display: none;
@@ -99,21 +115,22 @@
       th,
       td {
         font-size: 12px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--line);
         padding: 8px;
         text-align: center;
       }
       th {
-        background-color: #007bff;
-        color: white;
+        background-color: var(--highlight);
+        color: var(--ink);
+        font-weight: 600;
       }
       #errorMsg {
         color: red;
         margin-top: 10px;
       }
       #logout {
-        background-color: #f39c12;
-        color: white;
+        background-color: var(--surface-soft);
+        color: var(--ink);
         padding: 8px 15px;
         border: none;
         cursor: pointer;
@@ -121,7 +138,7 @@
         margin: 10px 0;
       }
       #logout:hover {
-        background-color: #e67e22;
+        background-color: var(--accent-hover);
       }
       .dateHeader {
         margin: 0;
@@ -152,13 +169,72 @@
         justify-content: space-between;
         align-items: center;
       }
-      .highlight-driver-not-needed {
-        background-color: #ddffdd; /* Light red to indicate need for more drivers */
-        color: #008000; /* Dark red text */
+      * { box-sizing: border-box; }
+      button, input { font: inherit; border-radius: 6px; min-height: 44px; }
+      button { font-size: 13px; margin: 0; }
+      button:disabled { opacity: .6; cursor: wait; }
+      :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+      #mainScreen { padding: 16px; }
+      #tripsContainer, #statsContainer, #weekPickerContainer { margin: 0; }
+      #weekPickerContainer { gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+      #weekPicker { flex: 1; min-width: 150px; margin: 0; }
+      #logout { margin: 0; padding: 8px; }
+      #errorMsg { max-width: 480px; margin: 8px auto; padding: 0 16px; }
+      #saveStatus { font-size: 13px; color: var(--muted); }
+      #saveStatus:empty { display: none; }
+      .dateHeader {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px 12px;
+        margin-top: 24px;
+        padding: 12px 8px;
+        border-top: 1px solid var(--line);
+        border-left: 3px solid transparent;
+        border-radius: 0 6px 6px 0;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--ink);
       }
-      .highlight-driver-needed {
-        background-color: #ffdddd; /* Light red to indicate need for more drivers */
-        color: #d80000; /* Dark red text */
+      .dateHeader.highlight-driver-not-needed { border-left-color: var(--success); }
+      .dateHeader.highlight-driver-needed {
+        border-left-color: #b15b50;
+        color: #8e3e36;
+        background: #fbefeb;
+      }
+      .dateHeader.emptyDay { border-left-color: transparent; color: var(--muted); }
+      .dateHeader.today { border-top-color: var(--success); }
+      .dateHeader .tripActions { justify-content: flex-end; gap: 6px; align-self: start; }
+      .dateHeader .tripActions button, #weekPickerContainer button { min-width: 44px; }
+      .dateHeader a { grid-column: 1 / -1; color: inherit; font-size: 12px; font-weight: normal; text-underline-offset: 3px; }
+      .companyHeader { margin: 12px 0 2px; padding: 6px 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
+      li { font-size: 14px; line-height: 1.5; padding: 6px 8px; gap: 8px; overflow-wrap: anywhere; border-bottom: 1px solid var(--line); }
+      li .tripActions { flex-shrink: 0; gap: 4px; }
+      li .tripActions button { min-width: 44px; background: var(--surface-soft); color: var(--accent); }
+      li .tripActions button:hover { background: var(--accent-hover); }
+      .ownTrip { color: var(--ink); font-weight: 600; }
+      li.ownTrip, tr.ownTrip { background: var(--highlight); }
+      li.ownTrip { border-radius: 6px; }
+      .pastDay { margin-top: 20px; border-top: 1px solid var(--line); }
+      .pastDay > summary { color: var(--muted); }
+      .pastDay > summary > .dateHeader {
+        display: inline-grid;
+        width: calc(100% - 24px);
+        margin: 0;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-weight: normal;
+      }
+      .pastDay li { color: var(--muted); }
+      #tripsContainer[inert] { opacity: .65; }
+      #statsContainer { margin-top: 28px; scroll-margin-top: 16px; }
+      #statsContainer h2 { font-size: 17px; margin-bottom: 6px; }
+      .hint { font-size: 12px; line-height: 1.5; color: var(--muted); }
+      #userStats { overflow-x: auto; }
+      @media (max-width: 520px) {
+        #mainScreen { margin: 8px; }
+        #loginForm, #resetPasswordForm, #resetForm { margin: 8px; }
+        th, td { padding: 6px; }
       }
     </style>
   </head>
@@ -166,8 +242,8 @@
     <h1>MegaKotxea</h1>
 
     <div id="loginForm">
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
+      <input type="email" id="email" placeholder="Email" aria-label="Email" autocomplete="username" />
+      <input type="password" id="password" placeholder="Contraseña" aria-label="Contraseña" autocomplete="current-password" />
       <button id="login">Iniciar</button>
       <p>
         <a href="javascript:void(0);" id="forgotPasswordLink"
@@ -200,26 +276,24 @@
       <p id="errorMessage" style="color: red; display: none"></p>
     </div>
 
-    <p id="errorMsg"></p>
+    <p id="errorMsg" role="alert"></p>
 
     <div id="mainScreen">
       <div id="weekPickerContainer">
-        <input type="week" id="weekPicker" />
-        <button id="clipboard">📋</button>
-        <button id="csv">⬇️</button>
-        <button id="logout">Cerrar</button>
+        <input type="week" id="weekPicker" aria-label="Semana del plan" />
+        <button id="csv" title="Descargar todos los viajes en CSV" aria-label="Descargar todos los viajes en CSV">⬇️</button>
+        <button id="logout" title="Cerrar sesión" aria-label="Cerrar sesión">🚪</button>
       </div>
 
-      <div id="loading">Cargando viajes...</div>
+      <div id="loading" role="status">Cargando viajes...</div>
+      <p id="saveStatus" role="status" aria-live="polite"></p>
       <div id="tripsContainer"></div>
       <div id="statsContainer">
+        <h2>Turno para conducir</h2>
+        <p class="hint">Menor ratio total primero: viajes como conductor / viajes reservados.
+          El total incluye futuras reservas; el consolidado cuenta hasta ayer.</p>
         <div id="userStats"></div>
       </div>
-      <textarea
-        id="generatedMessage"
-        style="width: 100%; height: 200px; display: none"
-        readonly
-      ></textarea>
     </div>
 
     <script>
@@ -416,44 +490,59 @@
         }
       }
 
+      let tripsRequest = 0;
+      let statsRequest = 0;
+      let renderedWeek = null;
+      let tripsLoading = false;
+
       async function fetchTrips() {
-        document.getElementById("loading").style.display = "block";
-        displayTrips([]);
         const weekStr = document.getElementById("weekPicker").value;
-        if (!weekStr) return;
-
-        const { start, end } = getWeekRange(weekStr);
-
-        const { data, error } = await supabasecli.functions.invoke(
-          `trips?start=${start}&end=${end}`,
-          {
-            method: "GET",
-          }
-        );
-
-        document.getElementById("loading").style.display = "none";
-
-        if (error) {
-          console.error("Error fetching trips:", error.message);
-          showError("Error fetching trips");
-        } else {
+        const request = ++tripsRequest;
+        const loading = document.getElementById("loading");
+        const container = document.getElementById("tripsContainer");
+        if (!weekStr) {
+          loading.style.display = "none";
+          tripsLoading = false;
+          container.inert = savingTrip;
+          return;
+        }
+        loading.style.display = "block";
+        tripsLoading = true;
+        container.inert = true;
+        if (renderedWeek !== weekStr) {
+          while (container.firstChild) container.removeChild(container.firstChild);
+        }
+        try {
+          const { start, end } = getWeekRange(weekStr);
+          const { data, error } = await supabasecli.functions.invoke(
+            `trips?start=${start}&end=${end}`, { method: "GET" }
+          );
+          if (request !== tripsRequest) return;
+          if (error) throw error;
           displayTrips(data.trips);
+          renderedWeek = weekStr;
+        } catch (error) {
+          if (request === tripsRequest) showError("No se pudo cargar el plan. Vuelve a seleccionar la semana para reintentar.");
+        } finally {
+          if (request === tripsRequest) {
+            loading.style.display = "none";
+            tripsLoading = false;
+            container.inert = savingTrip;
+          }
         }
       }
 
       async function fetchTripsStats() {
-        const { data, error } = await supabasecli.functions.invoke(
-          `trips?stats=true`,
-          {
-            method: "GET",
-          }
-        );
-
-        if (error) {
-          console.error("Error fetching trips stats:", error.message);
-          showError("Error fetching trips stats");
-        } else {
+        const request = ++statsRequest;
+        try {
+          const { data, error } = await supabasecli.functions.invoke(
+            "trips?stats=true", { method: "GET" }
+          );
+          if (request !== statsRequest) return;
+          if (error) throw error;
           displayStats(data.stats);
+        } catch (error) {
+          if (request === statsRequest) showError("No se pudo actualizar el turno para conducir. Recarga para reintentar.");
         }
       }
 
@@ -468,11 +557,12 @@
 
         const thead = document.createElement("thead");
         const headerRow = document.createElement("tr");
-        const headers = ["Usuario", "Ratio Total", "Ratio Consolidado"];
+        const headers = ["Orden · Usuario", "Ratio Total", "Hasta ayer"];
 
         headers.forEach((headerText) => {
           const th = document.createElement("th");
           th.textContent = headerText;
+          th.scope = "col";
           headerRow.appendChild(th);
         });
 
@@ -481,12 +571,19 @@
 
         const tbody = document.createElement("tbody");
 
-        stats.forEach((stat) => {
+        const orderedStats = [...stats].sort((a, b) => {
+          if (a.email === null) return 1;
+          if (b.email === null) return -1;
+          return a.driver_ratio - b.driver_ratio;
+        });
+        orderedStats.forEach((stat, index) => {
           const row = document.createElement("tr");
 
           const emailCell = document.createElement("td");
           emailCell.textContent =
+            (stat.email === null ? "" : `${index + 1}. `) +
             stat.first_name + (stat.last_name ? " " + stat.last_name : "");
+          if (stat.email === USER?.email) row.className = "ownTrip";
           row.appendChild(emailCell);
 
           const totalRatioCell = document.createElement("td");
@@ -551,6 +648,16 @@
         return `${year}-${month}-${day}`;
       }
 
+      function capacityLabel(people, seats) {
+        if (!people) return "Sin reservas";
+        if (people > seats) {
+          const missing = people - seats;
+          return `Falta${missing === 1 ? "" : "n"} ${missing} plaza${missing === 1 ? "" : "s"}`;
+        }
+        const free = seats - people;
+        return free ? `${free} plaza${free === 1 ? "" : "s"} libre${free === 1 ? "" : "s"}` : "Plazas cubiertas";
+      }
+
       function displayTrips(trips) {
         const tripsContainer = document.getElementById("tripsContainer");
 
@@ -579,7 +686,13 @@
           );
           const dateHeader = document.createElement("h5");
           dateHeader.className = "dateHeader";
-          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate}) · ${dayTrips.length}/${totalSeats}`;
+          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate})${formattedDate === nowDate ? " · Hoy" : ""} · ${dayTrips.length}/${totalSeats} · ${capacityLabel(dayTrips.length, totalSeats)}`;
+          dateHeader.title = "Personas reservadas / plazas totales (incluyen al conductor)";
+          if (!dayTrips.length) dateHeader.classList.add("emptyDay");
+          if (formattedDate === nowDate) {
+            dateHeader.classList.add("today");
+            dateHeader.setAttribute("aria-current", "date");
+          }
           dateHeader.classList.add(
             dayTrips.length > totalSeats
               ? "highlight-driver-needed"
@@ -606,11 +719,6 @@
             const companyHeader = document.createElement("h6");
             companyHeader.className = "companyHeader";
             companyHeader.textContent = `${company || "Sin empresa"} · ${companyTrips.length}/${seats}`;
-            companyHeader.classList.add(
-              companyTrips.length > seats
-                ? "highlight-driver-needed"
-                : "highlight-driver-not-needed"
-            );
             dayContainer.appendChild(companyHeader);
             const tripList = document.createElement("ul");
             companyTrips.forEach((trip) => {
@@ -620,6 +728,11 @@
               }${trip.is_driver ? "🚗" : "👤"}${
                 trip.notes ? `(${trip.notes})` : ""
               }`;
+
+              if (trip.profiles.email === USER.email) {
+                tripItem.classList.add("ownTrip");
+                tripItem.textContent = `Tú · ${tripItem.textContent}`;
+              }
 
               if (
                 trip.profiles.email === USER.email &&
@@ -632,6 +745,8 @@
 
                 const notesButton = document.createElement("button");
                 notesButton.textContent = "📝";
+                notesButton.title = "Editar tus notas";
+                notesButton.setAttribute("aria-label", "Editar tus notas");
                 notesButton.onclick = () => {
                   showPrompt(trip.notes, (notes) => {
                     addTrip(
@@ -645,6 +760,8 @@
 
                 const removeButton = document.createElement("button");
                 removeButton.textContent = "🗑️";
+                removeButton.title = "Cancelar tu reserva";
+                removeButton.setAttribute("aria-label", "Cancelar tu reserva");
                 removeButton.onclick = () => removeTrip(trip.trip_date);
                 buttons.appendChild(removeButton);
 
@@ -664,113 +781,71 @@
 
             if (!isTripAlready || (isTripAlready && !isTripAlready.is_driver)) {
               const addDriverButton = document.createElement("button");
-              addDriverButton.textContent = "+ 🚗";
+              addDriverButton.textContent = "🚗";
+              addDriverButton.title = "Reservar como conductor";
+              addDriverButton.setAttribute("aria-label", "Reservar como conductor");
               addDriverButton.onclick = () =>
-                addTrip(formattedDate, true, null);
+                addTrip(formattedDate, true, isTripAlready?.notes ?? null);
               buttonContainer.appendChild(addDriverButton);
             }
 
             if (!isTripAlready || (isTripAlready && isTripAlready.is_driver)) {
               const addPassengerButton = document.createElement("button");
-              addPassengerButton.textContent = "+ 👤";
+              addPassengerButton.textContent = "👤";
+              addPassengerButton.title = "Reservar como pasajero";
+              addPassengerButton.setAttribute("aria-label", "Reservar como pasajero");
               addPassengerButton.onclick = () =>
-                addTrip(formattedDate, false, null);
+                addTrip(formattedDate, false, isTripAlready?.notes ?? null);
               buttonContainer.appendChild(addPassengerButton);
             }
 
             dateHeader.appendChild(buttonContainer);
+            if (dayTrips.length > totalSeats) {
+              const rankingLink = document.createElement("a");
+              rankingLink.href = "#statsContainer";
+              rankingLink.textContent = "Se necesitan conductores · Ver turno ↓";
+              dateHeader.appendChild(rankingLink);
+            }
           }
         }
 
-        const message = generateMessage(trips);
-        const generatedMessageField =
-          document.getElementById("generatedMessage");
-        generatedMessageField.value = message;
       }
 
-      function groupTripsByDay(trips) {
-        const grouped = {
-          Astelehena: [],
-          Asteartea: [],
-          Asteazkena: [],
-          Osteguna: [],
-          Ostirala: [],
-        };
+      let savingTrip = false;
 
-        trips.forEach((trip) => {
-          const date = new Date(trip.trip_date);
-          const day = date.getUTCDay();
-
-          const weekday = [
-            "Astelehena",
-            "Asteartea",
-            "Asteazkena",
-            "Osteguna",
-            "Ostirala",
-          ][day - 1];
-
-          if (weekday) grouped[weekday].push(trip);
-        });
-
-        return grouped;
-      }
-
-      function generateMessage(trips) {
-        const tripDetails = groupTripsByDay(trips);
-        let message = "";
-
-        Object.keys(tripDetails).forEach((day) => {
-          message += `== ${day} ==\n`;
-          for (const [company, companyTrips] of groupTripsByCompany(tripDetails[day])) {
-            message += `-- ${company || "Sin empresa"} --\n`;
-            companyTrips.forEach((trip) => {
-              const name = [trip.profiles.first_name, trip.profiles.last_name]
-                .filter(Boolean).join(" ");
-              message += `${name}${trip.is_driver ? "🚗" : "👤"}${
-                trip.notes ? `(${trip.notes})` : ""
-              }\n`;
-            });
-          }
-          message += `\n`;
-        });
-
-        return message;
+      async function saveTrip(path, options, successMessage) {
+        if (savingTrip) return;
+        savingTrip = true;
+        clearError();
+        const container = document.getElementById("tripsContainer");
+        const status = document.getElementById("saveStatus");
+        container.inert = true;
+        container.setAttribute("aria-busy", "true");
+        status.textContent = "Guardando…";
+        try {
+          const { error } = await supabasecli.functions.invoke(path, options);
+          if (error) throw error;
+          status.textContent = successMessage;
+          await Promise.all([fetchTrips(), fetchTripsStats()]);
+        } catch (error) {
+          status.textContent = "";
+          showError("No se pudo actualizar el plan. Comprueba tu conexión e inténtalo de nuevo.");
+        } finally {
+          savingTrip = false;
+          container.inert = tripsLoading;
+          container.setAttribute("aria-busy", "false");
+        }
       }
 
       async function addTrip(trip_date, is_driver, notes) {
-        const newTrip = {
-          trip_date,
-          is_driver,
-          notes,
-        };
-
-        const { data, error } = await supabasecli.functions.invoke(`trips`, {
+        await saveTrip("trips", {
           method: "POST",
-          body: newTrip,
-        });
-
-        if (error) {
-          showError("Error adding trip");
-        } else {
-          fetchTrips();
-          fetchTripsStats();
-        }
+          body: { trip_date, is_driver, notes },
+        }, `Reserva guardada · ${is_driver ? "Conductor" : "Pasajero"}`);
       }
 
       async function removeTrip(tripDate) {
-        const { error } = await supabasecli.functions.invoke(
-          `trips/${tripDate}`,
-          {
-            method: "DELETE",
-          }
-        );
-
-        if (error) {
-          showError("Error removing trip");
-        } else {
-          fetchTrips();
-          fetchTripsStats();
-        }
+        await saveTrip(`trips/${tripDate}`, { method: "DELETE" }, "Reserva cancelada");
       }
 
       async function checkSession() {
@@ -840,29 +915,15 @@
         }
       }
 
-      function copyToClipboardButton() {
-        const messageElement = document.getElementById("generatedMessage");
-        if (
-          messageElement.style.display === "none" ||
-          messageElement.style.display === ""
-        ) {
-          messageElement.style.display = "block"; // Show the element
-        } else {
-          messageElement.style.display = "none"; // Hide the element
-        }
-      }
-
       document.getElementById("login").addEventListener("click", login);
       document.getElementById("csv").addEventListener("click", generateCSV);
-      document
-        .getElementById("clipboard")
-        .addEventListener("click", copyToClipboardButton);
       document.getElementById("logout").addEventListener("click", logout);
       document
         .getElementById("weekPicker")
         .addEventListener("change", function () {
+          clearError();
+          document.getElementById("saveStatus").textContent = "";
           fetchTrips();
-          fetchTripsStats();
         });
 
       document

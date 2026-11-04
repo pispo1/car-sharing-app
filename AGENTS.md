@@ -8,6 +8,8 @@ ratios, and export trip information.
 
 - Frontend: static HTML with inline CSS and vanilla JavaScript; no build step or
   package manifest. Supabase JS v2 is loaded from jsDelivr.
+- Keep the reservation UI simple and fast. Do not add external HTML dependencies,
+  UI frameworks, fonts, or icon libraries for usability improvements.
 - Authentication: Supabase email/password authentication and password recovery.
 - Backend: one TypeScript Supabase Edge Function running on Deno.
 - Data: Supabase Postgres, with schema, triggers, policies, and a statistics RPC
@@ -18,14 +20,15 @@ ratios, and export trip information.
 
 | Path | Responsibility |
 | --- | --- |
-| `frontend/index.html` | Entire UI, authentication, week/date calculations, API calls, trip rendering, statistics, CSV download, and shareable text generation. |
+| `frontend/index.html` | Entire UI, authentication, week/date calculations, API calls, trip rendering, statistics, and CSV download. |
 | `frontend/env.js` | Browser-visible Supabase URL and public anon key; loaded before the inline app script. |
 | `backend/supabase/functions/trips/index.ts` | CORS, JWT verification, trip reads/upserts/deletes, CSV generation, and statistics RPC invocation. |
 | `backend/supabase/migrations/20250319233803_init.sql` | Initial database schema, auth/profile trigger, timestamp trigger, RLS policies, and `get_trip_ratios()`. |
 | `firebase.json` | Static hosting directory, ignored files, and SPA rewrite. |
 | `.firebaserc` | Default Firebase project: `ik-car-sharing`. |
 | `.github/workflows/` | Firebase preview/live deployment and Supabase function deployment workflows. |
-| `tests/planning.test.cjs` | Node tests for company grouping, capacity, shareable text, and trip actions using a DOM stub. |
+| `tests/planning.test.cjs` | Node tests for company grouping, capacity and trip actions using a DOM stub. |
+| `tools/preview.py`, `tools/preview-data.js` | Local preview of the real frontend with fake users and reservations, outside the hosting directory. |
 
 ## Request and data flow
 
@@ -70,24 +73,45 @@ All routes below require authentication; `OPTIONS` handles CORS before auth.
   Capacity is calculated separately for each company, summing drivers' profile
   seats and comparing that with all participants, including drivers. Each day also
   shows the overall participant/seat count and capacity indicator across companies,
-  since users can share rides with other companies. The shareable
-  weekly text uses the same company groups. CSV and statistics remain global.
+  since users can share rides with other companies. CSV and statistics remain global.
 - Days before today's Madrid date render as native `details` sections, collapsed
   by default. Their summaries retain the daily count and capacity indicator;
   users can expand them to inspect company groups. Today and future days stay open.
+- Daily totals explain missing/free seats in text. Shortages link to the driver
+  order below the plan, sorted by total driver ratio ascending, with TOTAL last.
+  This is the existing all-date ratio; do not silently change fairness rules.
+- Palette uses local semantic CSS variables: warm white `#f8f7f3`, muted teal
+  `#2c6b60`, pale sage surfaces `#edf3ee`, and dark green text `#253b35`.
+  Keep colors soft; avoid neon brand accents and large dark header blocks.
+  Do not add remote brand assets, fonts, or stylesheets.
+- Visual hierarchy: daily shortages have a red background, sufficient capacity
+  uses a narrow green edge, and empty days stay neutral. Company headings retain
+  counts in neutral text because seats can be shared across companies. Past days
+  use muted styling. Keep reservation icons aligned to the right of each day.
+- Keep main-screen buttons icon-only for a clean mobile interface, with accessible
+  labels, tooltips, and touch targets of at least 44px. Users' own entries are marked "Tú".
+  Switching driver/passenger preserves notes. Saves show progress, block duplicate
+  mutations, and refresh trips and statistics. Week navigation only fetches trips
+  because statistics are global; stale trip responses are ignored.
 - Ratios are driver trips divided by all trips. Statistics cover all dates and
   active profiles, plus a TOTAL row; they are not filtered to the selected week.
 - The consolidated statistics use `trip_date < CURRENT_DATE` in Postgres, which
   excludes today and follows the database date/timezone.
 - Tables enable RLS; the Edge Function uses a service-role client. Preserve
   server-side ownership checks because this client bypasses RLS.
-- UI labels mix Spanish and English; generated weekly messages use Basque weekday
-  names. The clipboard button only toggles a text area; it does not copy text.
+- UI labels mix Spanish and English. The unused clipboard/shareable-text feature
+  has been removed; CSV download remains available.
 
 ## Development and validation
 
 - Keep changes within the existing static frontend/Deno structure unless the task
   calls for a larger refactor. There is no npm install/build/test script.
+- For a dummy preview, run `python3 tools/preview.py` and open
+  `http://localhost:8000`. Refresh after editing HTML/CSS/JS. The server reads the
+  real frontend on each request, replaces the Supabase SDK/configuration with an
+  in-memory mock, and blocks remote connections with CSP. Reservations and notes
+  can be changed in the demo and reset on reload. Stop with Ctrl+C; use `--port 8001`
+  if needed. This checks UI behavior, not real authentication, CSV, or the backend.
 - For a basic frontend preview, run `python3 -m http.server 8000 --directory frontend`
   from the repo root, if Python is available. This uses the configured remote
   Supabase backend; it does not create a local backend or emulate Firebase rewrites.
