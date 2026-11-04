@@ -129,6 +129,11 @@
         justify-content: space-between;
         align-items: center;
       }
+      .companyHeader {
+        font-size: 12px;
+        margin: 8px 0 4px;
+        padding: 6px;
+      }
       .tripActions {
         display: flex;
         justify-content: space-between;
@@ -510,13 +515,21 @@
           groupedTrips[date].push(trip);
         });
 
-        for (const date in groupedTrips) {
-          groupedTrips[date].sort(
-            (a, b) => new Date(a.trip_time) - new Date(b.trip_time)
-          );
-        }
-
         return groupedTrips;
+      }
+
+      function groupTripsByCompany(trips) {
+        const groups = new Map();
+        trips.forEach((trip) => {
+          const company = trip.profiles.company?.trim() || "";
+          if (!groups.has(company)) groups.set(company, []);
+          groups.get(company).push(trip);
+        });
+        return [...groups.entries()].sort(([a], [b]) => {
+          if (!a) return 1;
+          if (!b) return -1;
+          return a.localeCompare(b, "es");
+        });
       }
 
       function getCurrentDateInMadrid() {
@@ -541,7 +554,6 @@
         const weekStr = document.getElementById("weekPicker").value;
         const { start, end } = getWeekRange(weekStr);
         const startDate = new Date(start);
-        const endDate = new Date(end);
 
         const weekdays = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"];
         const groupedTrips = groupTripsByDate(trips);
@@ -555,36 +567,33 @@
           const formattedDate = currentDate.toISOString().split("T")[0];
           const dateHeader = document.createElement("h5");
           dateHeader.className = "dateHeader";
-          const totalSeats = groupedTrips[formattedDate]
-            ? groupedTrips[formattedDate].reduce((acc, trip) => {
-                return trip.is_driver ? acc + trip.profiles.seats : acc;
-              }, 0)
-            : 0;
-          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate}) ${
-            groupedTrips[formattedDate] != null
-              ? groupedTrips[formattedDate].length + "/" + totalSeats
-              : "0"
-          }`;
-
+          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate})`;
           tripsContainer.appendChild(dateHeader);
 
           let isTripAlready = null;
-          if (groupedTrips[formattedDate]) {
-            let passengers = 0;
-            let seats = 0;
+          const dayTrips = groupedTrips[formattedDate] || [];
+          for (const [company, companyTrips] of groupTripsByCompany(dayTrips)) {
+            const seats = companyTrips.reduce(
+              (total, trip) => total + (trip.is_driver ? trip.profiles.seats : 0),
+              0
+            );
+            const companyHeader = document.createElement("h6");
+            companyHeader.className = "companyHeader";
+            companyHeader.textContent = `${company || "Sin empresa"} · ${companyTrips.length}/${seats}`;
+            companyHeader.classList.add(
+              companyTrips.length > seats
+                ? "highlight-driver-needed"
+                : "highlight-driver-not-needed"
+            );
+            tripsContainer.appendChild(companyHeader);
             const tripList = document.createElement("ul");
-            groupedTrips[formattedDate].forEach((trip) => {
+            companyTrips.forEach((trip) => {
               const tripItem = document.createElement("li");
               tripItem.textContent = `${trip.profiles.first_name}${
                 trip.profiles.last_name ? " " + trip.profiles.last_name : ""
               }${trip.is_driver ? "🚗" : "👤"}${
                 trip.notes ? `(${trip.notes})` : ""
               }`;
-
-              if (trip.is_driver) {
-                seats = seats + trip.profiles.seats;
-              }
-              passengers++;
 
               if (
                 trip.profiles.email === USER.email &&
@@ -619,12 +628,6 @@
               }
               tripList.appendChild(tripItem);
             });
-
-            if (passengers > seats) {
-              dateHeader.classList.add("highlight-driver-needed");
-            } else {
-              dateHeader.classList.add("highlight-driver-not-needed");
-            }
 
             tripsContainer.appendChild(tripList);
           }
@@ -670,7 +673,7 @@
 
         trips.forEach((trip) => {
           const date = new Date(trip.trip_date);
-          const day = date.getDay();
+          const day = date.getUTCDay();
 
           const weekday = [
             "Astelehena",
@@ -680,11 +683,7 @@
             "Ostirala",
           ][day - 1];
 
-          grouped[weekday].push({
-            name: `${trip.profiles.first_name}${trip.profiles.last_name || ""}`,
-            is_driver: trip.is_driver,
-            notes: trip.notes,
-          });
+          if (weekday) grouped[weekday].push(trip);
         });
 
         return grouped;
@@ -696,11 +695,16 @@
 
         Object.keys(tripDetails).forEach((day) => {
           message += `== ${day} ==\n`;
-          tripDetails[day].forEach((trip) => {
-            message += `${trip.name}${trip.is_driver ? "🚗" : "👤"}${
-              trip.notes ? `(${trip.notes})` : ""
-            }\n`;
-          });
+          for (const [company, companyTrips] of groupTripsByCompany(tripDetails[day])) {
+            message += `-- ${company || "Sin empresa"} --\n`;
+            companyTrips.forEach((trip) => {
+              const name = [trip.profiles.first_name, trip.profiles.last_name]
+                .filter(Boolean).join(" ");
+              message += `${name}${trip.is_driver ? "🚗" : "👤"}${
+                trip.notes ? `(${trip.notes})` : ""
+              }\n`;
+            });
+          }
           message += `\n`;
         });
 

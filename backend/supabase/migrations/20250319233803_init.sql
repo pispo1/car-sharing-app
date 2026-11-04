@@ -5,6 +5,7 @@ CREATE TABLE profiles
   last_name text,
   seats smallint not null default '5'::smallint,
   is_active boolean NOT NULL DEFAULT true,
+  company text,
   PRIMARY KEY (id));
 
 

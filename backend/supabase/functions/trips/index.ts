@@ -17,7 +17,7 @@ const supabaseClient = createClient(
 async function getTrips(start?: string, end?: string) {
   try {
     let query = supabaseClient.from('trips')
-      .select('trip_date, is_driver, notes, profiles(email, first_name, last_name, seats)');
+      .select('trip_date, is_driver, notes, profiles(email, first_name, last_name, seats, company)');
 
     if (start) query = query.gte('trip_date', start);
     if (end) query = query.lte('trip_date', end);
