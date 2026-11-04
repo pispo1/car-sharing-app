@@ -134,6 +134,13 @@
         margin: 8px 0 4px;
         padding: 6px;
       }
+      .pastDay > summary {
+        cursor: pointer;
+      }
+      .pastDay > summary > .dateHeader {
+        display: inline-flex;
+        margin: 8px 0;
+      }
       .tripActions {
         display: flex;
         justify-content: space-between;
@@ -565,13 +572,32 @@
           currentDate.setDate(startDate.getDate() + i);
 
           const formattedDate = currentDate.toISOString().split("T")[0];
+          const dayTrips = groupedTrips[formattedDate] || [];
+          const totalSeats = dayTrips.reduce(
+            (total, trip) => total + (trip.is_driver ? trip.profiles.seats : 0),
+            0
+          );
           const dateHeader = document.createElement("h5");
           dateHeader.className = "dateHeader";
-          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate})`;
-          tripsContainer.appendChild(dateHeader);
+          dateHeader.textContent = `📅 ${weekdays[i]} (${formattedDate}) · ${dayTrips.length}/${totalSeats}`;
+          dateHeader.classList.add(
+            dayTrips.length > totalSeats
+              ? "highlight-driver-needed"
+              : "highlight-driver-not-needed"
+          );
+          let dayContainer = tripsContainer;
+          if (formattedDate < nowDate) {
+            dayContainer = document.createElement("details");
+            dayContainer.className = "pastDay";
+            const summary = document.createElement("summary");
+            summary.appendChild(dateHeader);
+            dayContainer.appendChild(summary);
+            tripsContainer.appendChild(dayContainer);
+          } else {
+            dayContainer.appendChild(dateHeader);
+          }
 
           let isTripAlready = null;
-          const dayTrips = groupedTrips[formattedDate] || [];
           for (const [company, companyTrips] of groupTripsByCompany(dayTrips)) {
             const seats = companyTrips.reduce(
               (total, trip) => total + (trip.is_driver ? trip.profiles.seats : 0),
@@ -585,7 +611,7 @@
                 ? "highlight-driver-needed"
                 : "highlight-driver-not-needed"
             );
-            tripsContainer.appendChild(companyHeader);
+            dayContainer.appendChild(companyHeader);
             const tripList = document.createElement("ul");
             companyTrips.forEach((trip) => {
               const tripItem = document.createElement("li");
@@ -629,7 +655,7 @@
               tripList.appendChild(tripItem);
             });
 
-            tripsContainer.appendChild(tripList);
+            dayContainer.appendChild(tripList);
           }
 
           if (formattedDate >= nowDate) {

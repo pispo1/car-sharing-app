@@ -68,8 +68,13 @@ All routes below require authentication; `OPTIONS` handles CORS before auth.
 - The UI renders Monday through Friday, grouping each day's participants by
   company, sorted by name. Blank/missing companies appear last as "Sin empresa".
   Capacity is calculated separately for each company, summing drivers' profile
-  seats and comparing that with all participants, including drivers. The shareable
+  seats and comparing that with all participants, including drivers. Each day also
+  shows the overall participant/seat count and capacity indicator across companies,
+  since users can share rides with other companies. The shareable
   weekly text uses the same company groups. CSV and statistics remain global.
+- Days before today's Madrid date render as native `details` sections, collapsed
+  by default. Their summaries retain the daily count and capacity indicator;
+  users can expand them to inspect company groups. Today and future days stay open.
 - Ratios are driver trips divided by all trips. Statistics cover all dates and
   active profiles, plus a TOTAL row; they are not filtered to the selected week.
 - The consolidated statistics use `trip_date < CURRENT_DATE` in Postgres, which
