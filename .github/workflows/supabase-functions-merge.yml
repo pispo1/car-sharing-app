@@ -10,17 +10,18 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       PROJECT_ID: ${{ vars.PROJECT_ID }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3.2.0
         with:
           version: latest
 
-      - run: supabase functions deploy --project-ref $PROJECT_ID --workdir backend
+      - name: Deploy Supabase functions
+        run: supabase functions deploy --remote="$PROJECT_ID" --workdir backend --yes

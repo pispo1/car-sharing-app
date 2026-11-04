@@ -109,7 +109,8 @@ All routes below require authentication; `OPTIONS` handles CORS before auth.
 - Supabase merge deployment runs on `main` changes under
   `backend/supabase/functions/**`, and can also be manually dispatched.
 - Both backend workflows run
-  `supabase functions deploy --project-ref $PROJECT_ID --workdir backend`.
+  `supabase functions deploy --remote="$PROJECT_ID" --workdir backend --yes`
+  on Ubuntu 24.04. The confirmation flag is required for noninteractive CI.
 - CI uses `FIREBASE_SERVICE_ACCOUNT_IK_CAR_SHARING`, `SUPABASE_ACCESS_TOKEN`, and
   the `PROJECT_ID` repository variable. No workflow applies database migrations.
 - Changes only to `firebase.json` or migrations do not trigger the corresponding
